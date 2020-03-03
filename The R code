@@ -1,0 +1,184 @@
+# Turtle rescue challenge
+
+#importing the dataset
+train = read.csv('train.csv')
+
+# Importing the needed libraries
+library(magrittr)
+library(dplyr)
+library(lubridate)
+library(tidyverse)
+library(tidyquant)
+library(timetk)
+library(sweep)
+library(forecast)
+library(tidyr)
+library(purrr)
+
+# DATA PREPROCESSING-------------------------------------------------------------------
+train_set1 = train%>%
+  mutate(year_caught = year(Date_TimeCaught),
+         Date_TimeCaught = ymd(train$Date_TimeCaught),
+         week_caught = week(Date_TimeCaught),
+         year_week = year_caught*100 + week_caught)%>%
+  select(Date_TimeCaught, CaptureSite, year_caught, year_week, week_caught)%>%
+  group_by(CaptureSite, year_week)%>%
+  summarise(Capture_Number = n())
+
+train_set1$ID = paste0(train_set1$CaptureSite, sep = '_', train_set1$year_week)
+
+#creating minimum dates per week------------------------------------------------------
+date_ranges = seq.Date(from = ymd(19980417), to = ymd(20191031), by = "week")
+
+date_seq = as.data.frame(date_ranges)
+
+date_seq = date_seq%>%
+  mutate(year_caught = year(date_ranges),
+         week_caught = isoweek(date_ranges),
+         year_week = year_caught*100 + week_caught)%>%
+  distinct(date_seq, year_week, .keep_all = TRUE)%>%
+  select(date_ranges, year_week)
+
+# Creating different dfs in terms of capturesite category and rbind-ing them to one df that has all the capturesite category
+cap0 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_0")
+cap1 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_1")
+cap2 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_2")
+cap3 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_3")
+cap4 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_4")
+cap5 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_5")
+cap6 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_6")
+cap7 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_7")
+cap8 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_8")
+cap9 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_9")
+cap10 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_10")
+cap11 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_11")
+cap12 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_12")
+cap13 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_13")
+cap14 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_14")
+cap15 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_15")
+cap16 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_16")
+cap17 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_17")
+cap18 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_18")
+cap19 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_19")
+cap20 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_20")
+cap21 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_21")
+cap22 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_22")
+cap23 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_23")
+cap24 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_24")
+cap25 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_25")
+cap26 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_26")
+cap27 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_27")
+cap28 = date_seq%>%
+  mutate(CaptureSite = "CaptureSite_28")
+
+date_seq = rbind(cap0,cap1,cap10,cap11,cap12,cap13,cap14,cap15,cap16,cap17,cap18,cap19,cap20,cap2,
+                 cap3,cap4,cap5,cap6,cap7,cap8,cap9,cap21,cap22,cap23,cap24,cap25,cap26,cap27,cap28)
+  
+# Making unique IDs in date_seq df
+date_seq$ID = paste0(date_seq$CaptureSite, sep = '_', date_seq$year_week)
+
+
+#merging two datasets train_set1 and date_seq
+date_seq = merge(date_seq[, -2], train_set1[, -c(1,2)], by = 'ID', all.x = TRUE)
+
+
+#Filling the NA in date$seq$Capture_Number with 0
+date_seq$Capture_Number = ifelse(is.na(date_seq$Capture_Number), 0, date_seq$Capture_Number)
+
+# Turning categorical variable CaptureSite into factors
+date_seq$CaptureSite = factor(date_seq$CaptureSite, 
+                              levels = c('CaptureSite_0', 'CaptureSite_1', 'CaptureSite_2','CaptureSite_3',
+                                         'CaptureSite_4', 'CaptureSite_5', 'CaptureSite_6','CaptureSite_7',
+                                         'CaptureSite_8','CaptureSite_9', 'CaptureSite_10', 'CaptureSite_11',
+                                         'CaptureSite_12','CaptureSite_13','CaptureSite_14','CaptureSite_15',
+                                         'CaptureSite_16','CaptureSite_17','CaptureSite_18','CaptureSite_19',
+                                         'CaptureSite_20','CaptureSite_21','CaptureSite_22','CaptureSite_23',
+                                         'CaptureSite_24','CaptureSite_25','CaptureSite_26','CaptureSite_27',
+                                         'CaptureSite_28'),
+                              labels = c(1:29))
+
+
+# Splitting date_seq into trainig and testing sets
+set.seed(125)
+submission_set = date_seq%>%
+  filter(year(date_ranges) == 2019)
+training_set = date_seq%>%
+  filter(year(date_ranges) < 2019)
+
+# Checking the distribution of the number of turtles rescued 
+library(ggplot2)
+ggplot(data = training_set, aes(x = week(date_ranges), y = Capture_Number))+
+  geom_line()+
+  facet_wrap(~CaptureSite, nrow = 8)+
+  theme_classic()
+
+
+#Modelling--------------------------------------------------------------------------------
+# Nesting the training set
+training_nested = date_seq%>%
+  select(CaptureSite, date_ranges, Capture_Number)%>%
+  group_by(CaptureSite)%>%
+  nest()
+
+# transforming the training_nested data into grouped time series data
+training_nested_ts = training_nested%>%
+  mutate(training.ts = map(.x = data,
+                       .f = tk_ts,
+                       select = -date_ranges,
+                       start = 199816,
+                       frequency = 52))
+
+#modelling the time series
+training_nested_fit <- training_nested_ts %>%
+  mutate(fit.ets = map(training.ts, ets)) #there is seasonality issues to check
+
+#Viewing model accuracy
+model_acc = training_nested_fit %>%
+  mutate(glance = map(fit.ets, sw_glance)) %>%
+  unnest(glance)
+mean(model_acc$RMSE)
+
+#forecasting the model
+training_nested_fcast <- training_nested_fit %>%
+  mutate(fcast.ets = map(fit.ets, forecast, h = 44))
+
+# tidy the forecast object.
+training_nested_fcast_tidy <- training_nested_fcast %>%
+  mutate(sweep = map(fcast.ets, sw_sweep, fitted = FALSE, timetk_idx = TRUE)) %>%
+  unnest(sweep)%>%
+  select(CaptureSite, Capture_Number, index)%>%
+  mutate(week_of_yr = week(index),
+         year_caught = year(index))%>%
+  filter(year_caught == 2019)
+
+
+filter(training_nested_fcast_tidy, year(index) = 2019 )
+tail(training_nested_fcast_tidy)
